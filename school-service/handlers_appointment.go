@@ -10,7 +10,7 @@ import (
 // 4. Zakazivanje termina
 
 type CreateSchoolAppointmentRequest struct {
-	StaffID  string `json:"staff_id" binding:"required"`
+	StaffID  string `json:"staff_id"`
 	DateTime string `json:"date_time" binding:"required"`
 	Type     string `json:"type" binding:"required"`
 	Notes    string `json:"notes"`

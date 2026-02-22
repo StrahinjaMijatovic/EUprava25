@@ -1,0 +1,14 @@
+# Tajne - nikad ne commit-ovati
+.env
+
+# Docker volumes / build
+.docker/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db

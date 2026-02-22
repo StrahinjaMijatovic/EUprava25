@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(printf:*)",
+      "Bash(go build:*)",
+      "Bash(go mod vendor:*)",
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(docker compose config:*)",
+      "Bash(python3:*)"
+    ]
+  }
+}

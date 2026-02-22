@@ -58,7 +58,7 @@ func getPatient(c *gin.Context) {
 
 func listPatients(c *gin.Context) {
 	role := getRole(c)
-	if role != "lekar" && role != "admin" && role != "medicinska_sestra" {
+	if role != "lekar" && role != "administrator" && role != "medicinska_sestra" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "unauthorized"})
 		return
 	}
@@ -75,7 +75,7 @@ type CreateDoctorRequest struct {
 
 func createDoctor(c *gin.Context) {
 	role := getRole(c)
-	if role != "lekar" && role != "admin" {
+	if role != "lekar" && role != "administrator" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "unauthorized"})
 		return
 	}

@@ -10,7 +10,7 @@ type Patient struct {
 	LastName     string    `gorm:"not null" json:"last_name"`
 	DateOfBirth  time.Time `json:"date_of_birth"`
 	HealthCardNo string    `gorm:"uniqueIndex" json:"health_card_no"`
-	DoctorID     string    `gorm:"type:uuid" json:"doctor_id"`
+	DoctorID     *string   `gorm:"type:uuid" json:"doctor_id"`
 	CreatedAt    time.Time `json:"created_at"`
 }
 

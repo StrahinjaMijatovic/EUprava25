@@ -102,7 +102,7 @@ type UpdateHealthAppointmentStatusRequest struct {
 
 func updateHealthAppointmentStatus(c *gin.Context) {
 	role := getRole(c)
-	if role != "lekar" && role != "admin" && role != "medicinska_sestra" {
+	if role != "lekar" && role != "administrator" && role != "medicinska_sestra" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "unauthorized"})
 		return
 	}

@@ -70,7 +70,7 @@ type UpdatePrescriptionStatusRequest struct {
 
 func updatePrescriptionStatus(c *gin.Context) {
 	role := getRole(c)
-	if role != "lekar" && role != "admin" {
+	if role != "lekar" && role != "administrator" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "only doctors or admins can update prescription status"})
 		return
 	}

@@ -62,7 +62,7 @@ type UpdateHealthCardStatusRequest struct {
 
 func updateHealthCardRequestStatus(c *gin.Context) {
 	role := getRole(c)
-	if role != "admin" && role != "administrator" {
+	if role != "administrator" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "only admins can update request status"})
 		return
 	}
