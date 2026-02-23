@@ -62,7 +62,7 @@ func listMedicalCertificates(c *gin.Context) {
 	var certs []MedicalCertificate
 	query := db
 	patientID := c.Query("patient_id")
-	if role == "pacijent" {
+	if role == "pacijent" || role == "ucenik" || role == "roditelj" {
 		var patient Patient
 		if result := db.Where("user_id = ?", userID).First(&patient); result.Error == nil {
 			query = query.Where("patient_id = ?", patient.ID)

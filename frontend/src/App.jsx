@@ -20,6 +20,7 @@ import Prescriptions from './pages/health/Prescriptions'
 import Messages from './pages/health/Messages'
 import HealthRecords from './pages/health/HealthRecords'
 import HealthCard from './pages/health/HealthCard'
+import MedicalCertificates from './pages/health/MedicalCertificates'
 
 const SCHOOL_ROLES = ['ucenik', 'roditelj', 'nastavnik', 'administracija', 'admin']
 const HEALTH_ROLES = ['pacijent', 'lekar', 'medicinska_sestra', 'administrator', 'admin']
@@ -73,6 +74,9 @@ export default function App() {
           } />
           <Route path="/health/healthcard" element={
             <PrivateRoute roles={HEALTH_ROLES}><HealthCard /></PrivateRoute>
+          } />
+          <Route path="/health/medical-certificates" element={
+            <PrivateRoute roles={ALL_ROLES}><MedicalCertificates /></PrivateRoute>
           } />
 
           {/* Fallback */}

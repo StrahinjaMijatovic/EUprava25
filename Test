@@ -1,0 +1,219 @@
+SSO baza (korisnici/uloge):                                                                                                                           psql -U sso_user -d sso_db
+                                                                                                                                                        School baza:                                                                                                                                          psql -U school_user -d school_db                                                                                                                                                                                                                                                                            Health baza:                                                                                                                                          psql -U health_user -d health_db                                                                                                                                                                                                                                                                          
+  ---
+  Nazivi kontejnera su:
+  - euprava25-postgres-sso
+  - euprava25-postgres-school
+  - euprava25-postgres-health
+
+  Nakon što uđeš u psql, korisne komande:
+  \dt                  -- vidi sve tabele
+  SELECT * FROM users; -- vidi sve korisnike (u SSO bazi)
+  \q                   -- izlaz
+
+
+
+
+
+✻ Cooked for 2m 39s                                                                                                                                     
+❯ sada mi napravi plan za testiranje aplikacije da prodjem i predstavim feature aplikacije                                                                                                                                            
+● Plan testiranja — eUprava25                                                                                                                                                                                                                                                                               
+  Priprema                                                                                                                                               
+  docker compose down -v                                                                                                                                docker compose up --build                                                                                                                                                                                                                                                                                 
+  Otvori http://localhost:3000
+
+  ---
+  Korak 1 — Registracija korisnika
+
+  Registruj sledećih 6 naloga redom (svaki sa lozinkom test1234):
+
+  ┌───────────────────┬────────────────┐
+  │       Email       │     Uloga      │
+  ├───────────────────┼────────────────┤
+  │ pacijent@test.rs  │ pacijent       │
+  ├───────────────────┼────────────────┤
+  │ lekar@test.rs     │ lekar          │
+  ├───────────────────┼────────────────┤
+  │ ucenik@test.rs    │ ucenik         │
+  ├───────────────────┼────────────────┤
+  │ roditelj@test.rs  │ roditelj       │
+  ├───────────────────┼────────────────┤
+  │ nastavnik@test.rs │ nastavnik      │
+  ├───────────────────┼────────────────┤
+  │ admin@test.rs     │ administracija │
+  └───────────────────┴────────────────┘
+
+  Šta pokazuješ: SSO registracija sa ulogama, redirekcija na login.
+
+  ---
+  Korak 2 — Zdravstveni modul
+
+  2.1 Lekar kreira profil
+
+  Prijavi se kao lekar@test.rs → Dashboard → nema akcija dok ne kreira profil lekara direktno preko API-ja:
+
+  curl -X POST http://localhost:3000/api/health/doctors \
+    -H "Authorization: Bearer <TOKEN>" \
+    -H "Content-Type: application/json" \
+    -d '{"first_name":"Marko","last_name":"Petrović","specialty":"Opšta medicina"}'
+
+  Token dobijaš iz localStorage-a u browseru (DevTools → Application → Local Storage → token).
+
+  2.2 Pacijent kreira profil
+
+  Prijavi se kao pacijent@test.rs → API:
+
+  curl -X POST http://localhost:3000/api/health/patients \
+    -H "Authorization: Bearer <TOKEN>" \
+    -H "Content-Type: application/json" \
+    -d '{"first_name":"Ana","last_name":"Jović","date_of_birth":"1990-05-15","health_card_no":"123456789"}'
+
+  2.3 Zakazivanje pregleda (Feature 1)
+
+  Prijava kao pacijent@test.rs → Zakazivanje pregleda → klikni + Zakaži pregled:
+  - Izaberi lekara iz liste
+  - Datum: sutrašnji dan
+  - Tip: Opšti pregled
+  - Klikni Zakaži
+
+  Šta pokazuješ: pacijent vidi pregled na listi sa statusom "Na čekanju"
+
+  2.4 Lekar potvrđuje pregled
+
+  Prijava kao lekar@test.rs → Zakazivanje pregleda → klikni Potvrdi
+
+  2.5 E-recepti (Feature 2)
+
+  Prijava kao lekar@test.rs → API:
+
+  curl -X POST http://localhost:3000/api/health/prescriptions \
+    -H "Authorization: Bearer <TOKEN>" \
+    -H "Content-Type: application/json" \
+    -d '{"patient_id":"<PATIENT_ID>","medication":"Brufen 400mg","dosage":"2x dnevno","duration":"7 dana"}'
+
+  Prijava kao pacijent@test.rs → E-recepti → recept je vidljiv sa statusom "active"
+
+  2.6 Poruke lekar-pacijent (Feature 3)
+
+  Prijava kao pacijent@test.rs → Poruke lekarima → pošalji poruku lekaru
+
+  Prijava kao lekar@test.rs → Poruke lekarima → odgovori
+
+  2.7 eKarton i nalazi (Feature 4)
+
+  Prijava kao lekar@test.rs → API:
+
+  curl -X POST http://localhost:3000/api/health/health-records \
+    -H "Authorization: Bearer <TOKEN>" \
+    -H "Content-Type: application/json" \
+    -d '{"patient_id":"<PATIENT_ID>","diagnosis":"Gripa","treatment":"Mirovanje i hidracija","record_date":"2026-02-21T10:00:00Z"}'
+
+  Prijava kao pacijent@test.rs → eKarton → zapis je vidljiv
+
+  2.8 Zahtev za zdravstvenu knjižicu (Feature 5)
+
+  Prijava kao pacijent@test.rs → Zdravstvena knjižica → + Podnesi zahtjev
+  - Tip: Zamjena
+  - Klikni Podnesi
+
+  2.9 Medicinska potvrda (integracija)
+
+  Prijava kao lekar@test.rs → API:
+
+  curl -X POST http://localhost:3000/api/health/medical-certificates \
+    -H "Authorization: Bearer <TOKEN>" \
+    -H "Content-Type: application/json" \
+    -d '{"patient_id":"<PATIENT_ID>","patient_name":"Ana Jović","type":"Potvrda o zdravstvenom
+  stanju","valid_from":"2026-02-21T00:00:00Z","valid_to":"2026-03-21T00:00:00Z"}'
+
+  ---
+  Korak 3 — Školski modul
+
+  3.1 Administracija kreira odeljenje i predmete
+
+  Prijava kao admin@test.rs → API:
+
+  # Kreiraj odeljenje
+  curl -X POST http://localhost:3000/api/school/classes \
+    -H "Authorization: Bearer <TOKEN>" \
+    -H "Content-Type: application/json" \
+    -d '{"name":"7A","year":7}'
+
+  # Kreiraj predmet
+  curl -X POST http://localhost:3000/api/school/subjects \
+    -H "Authorization: Bearer <TOKEN>" \
+    -H "Content-Type: application/json" \
+    -d '{"name":"Matematika","class_id":"<CLASS_ID>"}'
+
+  3.2 Upis učenika (Feature 1)
+
+  Prijava kao roditelj@test.rs → Upis u školu → + Nova prijava:
+  - Ime i prezime djeteta
+  - Datum rođenja
+  - Školska godina: 2026/2027
+  - Klikni Podnesi
+
+  Šta pokazuješ: prijava je na listi sa statusom "Na čekanju"
+
+  Prijava kao admin@test.rs → Upis u školu → klikni Odobri
+
+  3.3 Ocjene i dnevnik (Feature 3)
+
+  Prijava kao nastavnik@test.rs → Ocjene i dnevnik:
+  - Unesi ocenu za učenika iz matematike
+
+  Prijava kao ucenik@test.rs → Ocjene i dnevnik → ocena je vidljiva
+
+  3.4 Zakazivanje termina (Feature 4)
+
+  Prijava kao roditelj@test.rs → Zakazivanje termina → + Zakaži termin:
+  - Odaberi nastavnika/psihologa
+  - Datum i razlog
+  - Klikni Zakaži
+
+  3.5 Opravdanje izostanaka (Feature 5)
+
+  Prijava kao ucenik@test.rs → Opravdanje izostanaka → + Podnesi opravdanje:
+  - Datum od/do
+  - Razlog
+  - Ako postoji medicinska potvrda iz Koraka 2.9 — pojavljuje se u dropdown-u → odaberi je
+
+  Šta pokazuješ: integracija zdravstvo→škola — potvrda od lekara se direktno koristi kao opravdanje
+
+  Prijava kao nastavnik@test.rs → Opravdanje izostanaka → klikni Opravdaj
+
+  3.6 Dokumenta (Feature 2)
+
+  Prijava kao admin@test.rs → API (potvrda o školovanju):
+
+  curl -X POST http://localhost:3000/api/school/documents \
+    -H "Authorization: Bearer <TOKEN>" \
+    -H "Content-Type: application/json" \
+    -d '{"student_id":"<STUDENT_ID>","type":"Potvrda o školovanju","content":"Potvrđuje se da je učenik upisan u školu."}'
+
+  Prijava kao ucenik@test.rs → Dokumenta → dokument je vidljiv
+
+  ---
+  Korak 4 — Prikaz arhitekture (bonus)
+
+  Pokreni u terminalu da pokažeš sve servise:
+
+  docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+  Očekivani output:
+  euprava25-frontend     Up    0.0.0.0:3000->80/tcp
+  euprava25-gateway      Up    0.0.0.0:8080->8080/tcp
+  euprava25-sso          Up    0.0.0.0:8081->8080/tcp
+  euprava25-school       Up    0.0.0.0:8082->8080/tcp
+  euprava25-health       Up    0.0.0.0:8083->8080/tcp
+  euprava25-postgres-sso Up    0.0.0.0:5433->5432/tcp
+  ...
+
+  ---
+  Redosled prezentacije (preporučeno)
+
+  1. Pokreni Docker → pokaži arhitekturu
+  2. Registruj korisnike → pokaži SSO i uloge
+  3. Zdravstveni modul: pacijent zakazuje → lekar potvrđuje → recept → eKarton
+  4. Školski modul: upis → ocene → zakazivanje → opravdanje
+  5. Integracija — medicinska potvrda iz zdravstva se koristi u opravdanju izostanka (ovo je ključna tačka)

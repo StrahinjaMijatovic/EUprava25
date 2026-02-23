@@ -31,6 +31,7 @@ export const listAbsences = () => api.get('/school/absences')
 export const updateAbsenceStatus = (id, data) => api.patch(`/school/absences/${id}/status`, data)
 
 // Students / Classes / Subjects
+export const createStudent = (data) => api.post('/school/students', data)
 export const listStudents = () => api.get('/school/students')
 export const listClasses = () => api.get('/school/classes')
 export const listSubjects = () => api.get('/school/subjects')

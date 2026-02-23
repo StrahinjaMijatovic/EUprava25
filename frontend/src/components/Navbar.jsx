@@ -27,10 +27,14 @@ export default function Navbar() {
         {showSchool && (
           <>
             <li><NavLink to="/school/enrollments">Upis</NavLink></li>
-            <li><NavLink to="/school/grades">Ocjene</NavLink></li>
+            <li><NavLink to="/school/grades">Ocene</NavLink></li>
             <li><NavLink to="/school/appointments">Termini</NavLink></li>
             <li><NavLink to="/school/absences">Izostanci</NavLink></li>
             <li><NavLink to="/school/documents">Dokumenta</NavLink></li>
+            {/* Lekarski — ucenik/roditelj moraju kreirati zdravstveni profil */}
+            {['ucenik', 'roditelj'].includes(user?.role) && (
+              <li><NavLink to="/health/medical-certificates">Lekarski</NavLink></li>
+            )}
           </>
         )}
         {showHealth && (
@@ -40,6 +44,7 @@ export default function Navbar() {
             <li><NavLink to="/health/messages">Poruke</NavLink></li>
             <li><NavLink to="/health/records">eKarton</NavLink></li>
             <li><NavLink to="/health/healthcard">Zdravstvena</NavLink></li>
+            <li><NavLink to="/health/medical-certificates">Potvrde</NavLink></li>
           </>
         )}
         {user && (

@@ -15,18 +15,24 @@ export default function Absences() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ from_date: '', to_date: '', reason: '', document_url: '', med_cert_id: '' })
 
+  // Mapa cert.id -> cert objekat za brzo traženje u tabeli
+  const certById = React.useMemo(
+    () => Object.fromEntries(medCerts.map((c) => [c.id, c])),
+    [medCerts]
+  )
+
+  const CERT_TYPE_LABELS = { sport: 'Za fizičko', bolovanje: 'Bolovanje', opste: 'Opšti pregled', school: 'Za školu' }
+
   const isStaff = ['nastavnik', 'administracija', 'admin'].includes(user?.role)
 
   const load = async () => {
     try {
       const res = await listAbsences()
       setAbsences(res.data || [])
-      if (!isStaff) {
-        try {
-          const certs = await listMedicalCertificates()
-          setMedCerts(certs.data || [])
-        } catch { /* health service optional */ }
-      }
+      try {
+        const certs = await listMedicalCertificates()
+        setMedCerts(certs.data || [])
+      } catch { /* health service optional */ }
     } catch { setError('Greška pri učitavanju.') }
     finally { setLoading(false) }
   }
@@ -87,11 +93,14 @@ export default function Absences() {
               {medCerts.length > 0 && (
                 <div className="form-group" style={{ gridColumn: 'span 2' }}>
                   <label>Medicinska potvrda iz zdravstvenog kartona (opcionalno)</label>
-                  <select value={form.med_cert_id} onChange={(e) => setForm({ ...form, med_cert_id: e.target.value })}>
+                  <select
+                    value={form.med_cert_id}
+                    onChange={(e) => setForm({ ...form, med_cert_id: e.target.value, document_url: e.target.value })}
+                  >
                     <option value="">— Bez potvrde —</option>
                     {medCerts.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.type} — {c.valid_from ? new Date(c.valid_from).toLocaleDateString('sr-RS') : ''} do {c.valid_to ? new Date(c.valid_to).toLocaleDateString('sr-RS') : ''}
+                        {CERT_TYPE_LABELS[c.type] || c.type} — važi do {c.valid_to ? new Date(c.valid_to).toLocaleDateString('sr-RS') : '?'}
                       </option>
                     ))}
                   </select>
@@ -125,7 +134,30 @@ export default function Absences() {
                     <td>{a.from_date ? new Date(a.from_date).toLocaleDateString('sr-RS') : '—'}</td>
                     <td>{a.to_date ? new Date(a.to_date).toLocaleDateString('sr-RS') : '—'}</td>
                     <td>{a.reason}</td>
-                    <td>{a.document_url ? <a href={a.document_url} target="_blank" rel="noreferrer">Prikaži</a> : '—'}</td>
+                    <td>
+                      {(() => {
+                        const cert = a.document_url && certById[a.document_url]
+                        if (cert) {
+                          const active = cert.valid_to && new Date(cert.valid_to) >= new Date()
+                          return (
+                            <span style={{
+                              display: 'inline-flex', alignItems: 'center', gap: 5,
+                              background: '#eff6ff', border: '1px solid #bfdbfe',
+                              borderRadius: 6, padding: '2px 8px', fontSize: 13, color: '#1d4ed8'
+                            }}>
+                              🏥 {CERT_TYPE_LABELS[cert.type] || cert.type}
+                              <span style={{ color: active ? '#16a34a' : '#dc2626', fontSize: 11 }}>
+                                ({active ? 'aktivna' : 'istekla'})
+                              </span>
+                            </span>
+                          )
+                        }
+                        if (a.document_url?.startsWith('http')) {
+                          return <a href={a.document_url} target="_blank" rel="noreferrer">Prikaži</a>
+                        }
+                        return '—'
+                      })()}
+                    </td>
                     <td><span className={`badge badge-${a.status}`}>{STATUS_LABELS[a.status] || a.status}</span></td>
                     {isStaff && a.status === 'pending' && (
                       <td style={{ display: 'flex', gap: 6 }}>

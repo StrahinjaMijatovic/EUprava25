@@ -10,11 +10,12 @@ import (
 // 1. Elektronska prijava i evidencija učenika
 
 type CreateEnrollmentRequest struct {
-	FirstName   string `json:"first_name" binding:"required"`
-	LastName    string `json:"last_name" binding:"required"`
-	DateOfBirth string `json:"date_of_birth" binding:"required"`
-	SchoolYear  string `json:"school_year" binding:"required"`
-	Notes       string `json:"notes"`
+	FirstName    string `json:"first_name" binding:"required"`
+	LastName     string `json:"last_name" binding:"required"`
+	DateOfBirth  string `json:"date_of_birth" binding:"required"`
+	SchoolYear   string `json:"school_year" binding:"required"`
+	Notes        string `json:"notes"`
+	HealthCertID string `json:"health_cert_id"`
 }
 
 func createEnrollment(c *gin.Context) {
@@ -36,6 +37,7 @@ func createEnrollment(c *gin.Context) {
 		SchoolYear:   req.SchoolYear,
 		Status:       "pending",
 		Notes:        req.Notes,
+		HealthCertID: req.HealthCertID,
 	}
 	if result := db.Create(&enrollment); result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})

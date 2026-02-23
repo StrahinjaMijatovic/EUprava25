@@ -19,22 +19,26 @@ export default function Grades() {
 
   const isTeacher = ['nastavnik', 'administracija', 'admin'].includes(user?.role)
 
+  // Lookup mape za prikaz imena
+  const studentById = React.useMemo(() => Object.fromEntries(students.map((s) => [s.id, s])), [students])
+  const subjectById = React.useMemo(() => Object.fromEntries(subjects.map((s) => [s.id, s])), [subjects])
+
   const load = async () => {
     setLoading(true)
-    try {
-      const [g, a] = await Promise.all([listGrades(), listAttendance()])
-      setGrades(g.data || [])
-      setAttendance(a.data || [])
-      if (isTeacher) {
-        const [st, su] = await Promise.all([listStudents(), listSubjects()])
-        setStudents(st.data || [])
-        setSubjects(su.data || [])
-      }
-    } catch {
-      setError('Greška pri učitavanju.')
-    } finally {
-      setLoading(false)
-    }
+    setError('')
+    const results = await Promise.allSettled([
+      listGrades(),
+      listAttendance(),
+      listStudents(),
+      listSubjects(),
+    ])
+    const [g, a, st, su] = results
+    if (g.status  === 'fulfilled') setGrades(g.value.data || [])
+    if (a.status  === 'fulfilled') setAttendance(a.value.data || [])
+    if (st.status === 'fulfilled') setStudents(st.value.data || [])
+    else setError(`Greška pri učitavanju učenika: ${st.reason?.response?.data?.error || st.reason?.message || 'nepoznata greška'}`)
+    if (su.status === 'fulfilled') setSubjects(su.value.data || [])
+    setLoading(false)
   }
 
   useEffect(() => { load() }, [])
@@ -102,9 +106,16 @@ export default function Grades() {
                   <div className="form-group">
                     <label>Učenik</label>
                     <select value={gradeForm.student_id} onChange={(e) => setGradeForm({ ...gradeForm, student_id: e.target.value })} required>
-                      <option value="">Izaberite učenika</option>
+                      <option value="">
+                        {students.length === 0 ? '— Nema upisanih učenika —' : 'Izaberite učenika'}
+                      </option>
                       {students.map((s) => <option key={s.id} value={s.id}>{s.first_name} {s.last_name}</option>)}
                     </select>
+                    {students.length === 0 && (
+                      <small style={{ color: '#dc2626', fontSize: 12, display: 'block', marginTop: 4 }}>
+                        Nema učenika. Admin mora odobriti upis putem "Odobri i upiši učenika".
+                      </small>
+                    )}
                   </div>
                   <div className="form-group">
                     <label>Predmet</label>
@@ -137,16 +148,20 @@ export default function Grades() {
                 <table>
                   <thead><tr><th>Učenik</th><th>Predmet</th><th>Ocjena</th><th>Datum</th><th>Napomena</th>{isTeacher && <th>Akcija</th>}</tr></thead>
                   <tbody>
-                    {grades.map((g) => (
-                      <tr key={g.id}>
-                        <td>{g.student_id}</td>
-                        <td>{g.subject_id}</td>
-                        <td><strong style={{ fontSize: '1.1em', color: g.value >= 3 ? 'var(--success)' : 'var(--danger)' }}>{g.value}</strong></td>
-                        <td>{g.grade_date ? new Date(g.grade_date).toLocaleDateString('sr-RS') : '—'}</td>
-                        <td>{g.comment || '—'}</td>
-                        {isTeacher && <td><button className="btn btn-danger btn-sm" onClick={() => handleDeleteGrade(g.id)}>Briši</button></td>}
-                      </tr>
-                    ))}
+                    {grades.map((g) => {
+                      const st = studentById[g.student_id]
+                      const su = subjectById[g.subject_id]
+                      return (
+                        <tr key={g.id}>
+                          <td>{st ? `${st.first_name} ${st.last_name}` : g.student_id}</td>
+                          <td>{su ? su.name : g.subject_id}</td>
+                          <td><strong style={{ fontSize: '1.1em', color: g.value >= 3 ? 'var(--success)' : 'var(--danger)' }}>{g.value}</strong></td>
+                          <td>{g.grade_date ? new Date(g.grade_date).toLocaleDateString('sr-RS') : '—'}</td>
+                          <td>{g.comment || '—'}</td>
+                          {isTeacher && <td><button className="btn btn-danger btn-sm" onClick={() => handleDeleteGrade(g.id)}>Briši</button></td>}
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -205,10 +220,13 @@ export default function Grades() {
                 <table>
                   <thead><tr><th>Učenik</th><th>Predmet</th><th>Datum</th><th>Status</th></tr></thead>
                   <tbody>
-                    {attendance.map((a) => (
+                    {attendance.map((a) => {
+                      const st = studentById[a.student_id]
+                      const su = subjectById[a.subject_id]
+                      return (
                       <tr key={a.id}>
-                        <td>{a.student_id}</td>
-                        <td>{a.subject_id}</td>
+                        <td>{st ? `${st.first_name} ${st.last_name}` : a.student_id}</td>
+                        <td>{su ? su.name : a.subject_id}</td>
                         <td>{a.date ? new Date(a.date).toLocaleDateString('sr-RS') : '—'}</td>
                         <td>
                           <span className={`badge ${a.status === 'present' ? 'badge-approved' : a.status === 'absent' ? 'badge-rejected' : 'badge-pending'}`}>
@@ -216,7 +234,8 @@ export default function Grades() {
                           </span>
                         </td>
                       </tr>
-                    ))}
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
